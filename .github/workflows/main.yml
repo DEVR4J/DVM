@@ -38,7 +38,7 @@ jobs:
               build-base linux-headers python3 py3-pip py3-setuptools meson ninja pkgconf \
               flex bison perl bash curl xz tar \
               glib-dev glib-static pixman-dev pixman-static zlib-dev zlib-static \
-              pcre2-dev pcre2-static libffi-dev util-linux-dev util-linux-static \
+              pcre2-dev libffi-dev util-linux-dev util-linux-static \
               gettext-dev gettext-static libslirp-dev dtc-dev
 
           cd /tmp
@@ -98,4 +98,4 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: GsiBox-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk 
+          path: app/build/outputs/apk/debug/app-debug.apk
