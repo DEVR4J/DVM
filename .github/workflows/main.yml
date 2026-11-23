@@ -1,0 +1,63 @@
+name: Build GsiBox APK
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  qemu:
+    name: Build static QEMU (arm64)
+    # arm64 runners are free for public repos. For a private repo, change this to
+    # ubuntu-latest and add a docker/setup-qemu-action step (build becomes very slow).
+    runs-on: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache QEMU build
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: qemu-out
+          key: qemu-9.1.2-${{ hashFiles('ci/build-qemu.sh') }}
+
+      - name: Build QEMU in Alpine (musl, static)
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p qemu-out
+          docker run --rm -v "$PWD:/w" -w /w alpine:3.20 sh ci/build-qemu.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: qemu
+          path: qemu-out/libqemu.so
+          if-no-files-found: error
+
+  apk:
+    name: Build APK
+    needs: qemu
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: qemu
+          path: app/src/main/jniLibs/arm64-v8a
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: 8.9
+
+      - name: Build debug APK
+        run: gradle --no-daemon assembleDebug
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GsiBox-debug-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
