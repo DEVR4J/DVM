@@ -39,7 +39,7 @@ jobs:
               flex bison perl bash curl xz tar \
               glib-dev glib-static pixman-dev pixman-static zlib-dev zlib-static \
               pcre2-dev libffi-dev util-linux-dev util-linux-static \
-              gettext-dev gettext-static libslirp-dev
+              gettext-dev gettext-static
 
           # Alpine ships libfdt only as a shared lib; build a static libfdt.a from the dtc sources.
           cd /tmp
@@ -52,6 +52,17 @@ jobs:
           cp libfdt/libfdt.a /usr/lib/
           cp libfdt/libfdt.h libfdt/fdt.h libfdt/libfdt_env.h /usr/include/
           ls -l /usr/lib/libfdt*
+
+          # Static libslirp (user-mode networking). If this fails, build QEMU without networking.
+          cd /tmp
+          SLIRP_OPT=--disable-slirp
+          if curl -fsSL -o slirp.tar.gz https://gitlab.freedesktop.org/slirp/libslirp/-/archive/v4.8.0/libslirp-v4.8.0.tar.gz \
+             && mkdir slirp-src && tar xf slirp.tar.gz -C slirp-src --strip-components=1 \
+             && meson setup slirp-src/build slirp-src --prefix=/usr --libdir=lib --default-library=static \
+             && ninja -C slirp-src/build install; then
+            SLIRP_OPT=--enable-slirp
+          fi
+          echo "SLIRP_OPT=$SLIRP_OPT"
 
           cd /tmp
           curl -fsSL -o qemu.tar.xz "https://download.qemu.org/qemu-${QEMU_VERSION}.tar.xz"
@@ -69,7 +80,8 @@ jobs:
               --disable-brlapi --disable-libusb --disable-libnfs --disable-rbd --disable-fuse \
               --disable-seccomp --disable-numa --disable-libiscsi --disable-smartcard \
               --disable-usb-redir --disable-vnc-sasl --disable-png --disable-glusterfs \
-              --enable-fdt=system
+              --enable-fdt=system \
+              --disable-curses $SLIRP_OPT
 
           cd build
           ninja -j"$(nproc)" qemu-system-aarch64
