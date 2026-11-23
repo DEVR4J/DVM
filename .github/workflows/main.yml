@@ -39,7 +39,7 @@ jobs:
               flex bison perl bash curl xz tar \
               glib-dev glib-static pixman-dev pixman-static zlib-dev zlib-static \
               pcre2-dev libffi-dev util-linux-dev util-linux-static \
-              gettext-dev gettext-static libslirp-dev dtc-dev
+              gettext-dev gettext-static libslirp-dev
 
           cd /tmp
           curl -fsSL -o qemu.tar.xz "https://download.qemu.org/qemu-${QEMU_VERSION}.tar.xz"
@@ -56,7 +56,8 @@ jobs:
               --disable-libssh --disable-gnutls --disable-nettle --disable-gcrypt --disable-vde \
               --disable-brlapi --disable-libusb --disable-libnfs --disable-rbd --disable-fuse \
               --disable-seccomp --disable-numa --disable-libiscsi --disable-smartcard \
-              --disable-usb-redir --disable-vnc-sasl --disable-png --disable-glusterfs
+              --disable-usb-redir --disable-vnc-sasl --disable-png --disable-glusterfs \
+              --enable-fdt=internal
 
           cd build
           ninja -j"$(nproc)" qemu-system-aarch64
