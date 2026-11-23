@@ -19,13 +19,51 @@ jobs:
         uses: actions/cache@v4
         with:
           path: qemu-out
-          key: qemu-9.1.2-${{ hashFiles('ci/build-qemu.sh') }}
+          key: qemu-9.1.2-v2
 
       - name: Build QEMU in Alpine (musl, static)
         if: steps.cache.outputs.cache-hit != 'true'
         run: |
           mkdir -p qemu-out
-          docker run --rm -v "$PWD:/w" -w /w alpine:3.20 sh ci/build-qemu.sh
+          cat > build-qemu.sh <<'SCRIPT_EOF'
+          #!/bin/sh
+          # Builds a fully static qemu-system-aarch64 (musl) inside an arm64 Alpine container.
+          # The result is copied to /w/qemu-out/libqemu.so (named .so so Android installs it
+          # into nativeLibraryDir, the only place an app may exec binaries from).
+          set -eux
+
+          QEMU_VERSION=9.1.2
+
+          apk add --no-cache \
+              build-base linux-headers python3 py3-pip py3-setuptools meson ninja pkgconf \
+              flex bison perl bash curl xz tar \
+              glib-dev glib-static pixman-dev pixman-static zlib-dev zlib-static \
+              pcre2-dev pcre2-static libffi-dev util-linux-dev util-linux-static \
+              gettext-dev gettext-static libslirp-dev dtc-dev
+
+          cd /tmp
+          curl -fsSL -o qemu.tar.xz "https://download.qemu.org/qemu-${QEMU_VERSION}.tar.xz"
+          tar xf qemu.tar.xz
+          cd "qemu-${QEMU_VERSION}"
+
+          ./configure \
+              --static \
+              --target-list=aarch64-softmmu \
+              --disable-docs --disable-tools --disable-guest-agent --disable-user \
+              --disable-werror \
+              --disable-gtk --disable-sdl --disable-opengl
+
+          make -j"$(nproc)"
+
+          strip build/qemu-system-aarch64
+          ./build/qemu-system-aarch64 --version
+          ./build/qemu-system-aarch64 -netdev help | head -n 20 || true
+
+          mkdir -p /w/qemu-out
+          cp build/qemu-system-aarch64 /w/qemu-out/libqemu.so
+          ls -l /w/qemu-out
+          SCRIPT_EOF
+          docker run --rm -v "$PWD:/w" -w /w alpine:3.20 sh /w/build-qemu.sh
 
       - uses: actions/upload-artifact@v4
         with:
@@ -60,4 +98,4 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: GsiBox-debug-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: app/build/outputs/apk/debug/app-debug.apk 
