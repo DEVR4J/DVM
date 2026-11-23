@@ -51,9 +51,16 @@ jobs:
               --target-list=aarch64-softmmu \
               --disable-docs --disable-tools --disable-guest-agent --disable-user \
               --disable-werror \
-              --disable-gtk --disable-sdl --disable-opengl
+              --disable-gtk --disable-sdl --disable-opengl \
+              --disable-bzip2 --disable-lzo --disable-snappy --disable-zstd --disable-curl \
+              --disable-libssh --disable-gnutls --disable-nettle --disable-gcrypt --disable-vde \
+              --disable-brlapi --disable-libusb --disable-libnfs --disable-rbd --disable-fuse \
+              --disable-seccomp --disable-numa --disable-libiscsi --disable-smartcard \
+              --disable-usb-redir --disable-vnc-sasl --disable-png --disable-glusterfs
 
-          make -j"$(nproc)"
+          cd build
+          ninja -j"$(nproc)" qemu-system-aarch64
+          cd ..
 
           strip build/qemu-system-aarch64
           ./build/qemu-system-aarch64 --version
