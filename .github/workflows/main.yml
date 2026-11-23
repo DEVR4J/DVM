@@ -41,6 +41,18 @@ jobs:
               pcre2-dev libffi-dev util-linux-dev util-linux-static \
               gettext-dev gettext-static libslirp-dev
 
+          # Alpine ships libfdt only as a shared lib; build a static libfdt.a from the dtc sources.
+          cd /tmp
+          curl -fsSL -o dtc.tar.gz https://git.kernel.org/pub/scm/utils/dtc/dtc.git/snapshot/dtc-1.7.0.tar.gz \
+            || curl -fsSL -o dtc.tar.gz https://github.com/dgibson/dtc/archive/refs/tags/v1.7.0.tar.gz
+          mkdir dtc-src
+          tar xf dtc.tar.gz -C dtc-src --strip-components=1
+          cd dtc-src
+          make libfdt/libfdt.a
+          cp libfdt/libfdt.a /usr/lib/
+          cp libfdt/libfdt.h libfdt/fdt.h libfdt/libfdt_env.h /usr/include/
+          ls -l /usr/lib/libfdt*
+
           cd /tmp
           curl -fsSL -o qemu.tar.xz "https://download.qemu.org/qemu-${QEMU_VERSION}.tar.xz"
           tar xf qemu.tar.xz
@@ -57,7 +69,7 @@ jobs:
               --disable-brlapi --disable-libusb --disable-libnfs --disable-rbd --disable-fuse \
               --disable-seccomp --disable-numa --disable-libiscsi --disable-smartcard \
               --disable-usb-redir --disable-vnc-sasl --disable-png --disable-glusterfs \
-              --enable-fdt=internal
+              --enable-fdt=system
 
           cd build
           ninja -j"$(nproc)" qemu-system-aarch64
