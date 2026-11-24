@@ -143,6 +143,16 @@ jobs:
           cp qemu-dl/libqemu.so "$PROJ/app/src/main/jniLibs/arm64-v8a/libqemu.so"
           ls -l "$PROJ/app/src/main/jniLibs/arm64-v8a"
 
+      - name: Fetch QEMU keymaps (needed by the VNC display)
+        run: |
+          mkdir -p km-tmp
+          curl -fsSL https://download.qemu.org/qemu-9.1.2.tar.xz \
+            | tar -xJ -C km-tmp --strip-components=2 qemu-9.1.2/pc-bios/keymaps
+          test -e km-tmp/keymaps/en-us
+          mkdir -p "$PROJ/app/src/main/assets/qemu-data"
+          cp -rL km-tmp/keymaps "$PROJ/app/src/main/assets/qemu-data/keymaps"
+          ls "$PROJ/app/src/main/assets/qemu-data/keymaps" | head -n 5
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
