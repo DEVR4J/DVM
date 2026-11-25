@@ -153,6 +153,11 @@ jobs:
           cp -rL km-tmp/keymaps "$PROJ/app/src/main/assets/qemu-data/keymaps"
           ls "$PROJ/app/src/main/assets/qemu-data/keymaps" | head -n 5
 
+      - name: Build the small fd launcher (starts the KeyMint helper)
+        run: |
+          gcc -static -O2 -o "$PROJ/app/src/main/jniLibs/arm64-v8a/libfdlaunch.so" "$PROJ/native/fdlaunch.c"
+          ls -l "$PROJ/app/src/main/jniLibs/arm64-v8a"
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
